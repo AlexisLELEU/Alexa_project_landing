@@ -1,0 +1,2016 @@
+const Alexa = require("ask-sdk");
+const https = require("https");
+
+
+
+const invocationName = "jeux olympiques";
+
+// Session Attributes 
+//   Alexa will track attributes for you, by default only during the lifespan of your session.
+//   The history[] array will track previous request(s), used for contextual Help/Yes/No handling.
+//   Set up DynamoDB persistence to have the skill save and reload these attributes between skill sessions.
+
+function getMemoryAttributes() {   const memoryAttributes = {
+       "history":[],
+
+        // The remaining attributes will be useful after DynamoDB persistence is configured
+       "launchCount":0,
+       "lastUseTimestamp":0,
+
+       "lastSpeechOutput":{},
+       "nextIntent":[]
+
+       // "favoriteColor":"",
+       // "name":"",
+       // "namePronounce":"",
+       // "email":"",
+       // "mobileNumber":"",
+       // "city":"",
+       // "state":"",
+       // "postcode":"",
+       // "birthday":"",
+       // "bookmark":0,
+       // "wishlist":[],
+   };
+   return memoryAttributes;
+};
+
+const maxHistorySize = 20; // remember only latest 20 intents 
+
+
+// 1. Intent Handlers =============================================
+
+const AMAZON_CancelIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.CancelIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+
+        let say = 'D\'accord, je reste disponible';
+
+        return responseBuilder
+            .speak(say)
+            .withShouldEndSession(true)
+            .getResponse();
+    },
+};
+
+const AMAZON_HelpIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.HelpIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let intents = getCustomIntents();
+        let sampleIntent = randomElement(intents);
+
+        let say = 'You asked for help. '; 
+
+        // let previousIntent = getPreviousIntent(sessionAttributes);
+        // if (previousIntent && !handlerInput.requestEnvelope.session.new) {
+        //     say += 'Your last intent was ' + previousIntent + '. ';
+        // }
+        // say +=  'I understand  ' + intents.length + ' intents, '
+
+        say += ' Here something you can ask me, ' + getSampleUtterance(sampleIntent);
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const AMAZON_StopIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.StopIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+
+        let say = 'D\'accord, je reste disponible';
+
+        return responseBuilder
+            .speak(say)
+            .withShouldEndSession(true)
+            .getResponse();
+    },
+};
+
+const AMAZON_NavigateHomeIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.NavigateHomeIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from AMAZON.NavigateHomeIntent. ';
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const getInformation_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'getInformation' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from getInformation. ';
+
+        let slotStatus = '';
+        let resolvedSlot;
+
+        let slotValues = getSlotValues(request.intent.slots); 
+        // getSlotValues returns .heardAs, .resolved, and .isValidated for each slot, according to request slot status codes ER_SUCCESS_MATCH, ER_SUCCESS_NO_MATCH, or traditional simple request slot without resolutions
+
+        // console.log('***** slotValues: ' +  JSON.stringify(slotValues, null, 2));
+        //   SLOT: pays 
+        if (slotValues.pays.heardAs) {
+            slotStatus += ' slot pays was heard as ' + slotValues.pays.heardAs + '. ';
+        } else {
+            slotStatus += 'slot pays is empty. ';
+        }
+        if (slotValues.pays.ERstatus === 'ER_SUCCESS_MATCH') {
+            slotStatus += 'a valid ';
+            if(slotValues.pays.resolved !== slotValues.pays.heardAs) {
+                slotStatus += 'synonym for ' + slotValues.pays.resolved + '. '; 
+                } else {
+                slotStatus += 'match. '
+            } // else {
+                //
+        }
+        if (slotValues.pays.ERstatus === 'ER_SUCCESS_NO_MATCH') {
+            slotStatus += 'which did not match any slot value. ';
+            console.log('***** consider adding "' + slotValues.pays.heardAs + '" to the custom slot type used by slot pays! '); 
+        }
+
+        if( (slotValues.pays.ERstatus === 'ER_SUCCESS_NO_MATCH') ||  (!slotValues.pays.heardAs) ) {
+            slotStatus += 'A few valid values are, ' + sayArray(getExampleSlotValues('getInformation','pays'), 'or');
+        }
+
+        say += slotStatus;
+        if(slotStatus && typeof slotValues.pays.heardAs !=="undefined")
+        {
+            say = slotValues.pays.heardAs + " sera bien présent aux jeux olympiques de Paris en 2024";
+        }
+        else
+        {
+            say = "Voici une liste des pays présents aux jeux olympiques de Paris : \n  " + sayArray(getExampleSlotValues('getInformation','pays'), 'ainsi que');
+        }
+    
+        // say = sayArray(getExampleSlotValues('getInformation','pays'), 'or');
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const AMAZON_PauseIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.PauseIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from AMAZON.PauseIntent. ';
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const AMAZON_ResumeIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.ResumeIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from AMAZON.ResumeIntent. ';
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const AMAZON_MoreIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.MoreIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from AMAZON.MoreIntent. ';
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const AMAZON_NavigateSettingsIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.NavigateSettingsIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from AMAZON.NavigateSettingsIntent. ';
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const AMAZON_NextIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.NextIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from AMAZON.NextIntent. ';
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const AMAZON_PageUpIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.PageUpIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from AMAZON.PageUpIntent. ';
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const AMAZON_PageDownIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.PageDownIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from AMAZON.PageDownIntent. ';
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const AMAZON_PreviousIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.PreviousIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from AMAZON.PreviousIntent. ';
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const AMAZON_ScrollRightIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.ScrollRightIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from AMAZON.ScrollRightIntent. ';
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const AMAZON_ScrollDownIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.ScrollDownIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from AMAZON.ScrollDownIntent. ';
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const AMAZON_ScrollLeftIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.ScrollLeftIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from AMAZON.ScrollLeftIntent. ';
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const AMAZON_ScrollUpIntent_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.ScrollUpIntent' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from AMAZON.ScrollUpIntent. ';
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+const getCountDown_Handler = {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'getCountDown';
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes
+
+        let now = new Date();
+
+        let say;
+
+        let slotStatus = '';
+        let resolvedSlot;
+
+        let slotValues = getSlotValues(request.intent.slots);
+        // getSlotValues returns .heardAs, .resolved, and .isValidated for each slot, according to request slot status codes ER_SUCCESS_MATCH, ER_SUCCESS_NO_MATCH, or traditional simple request slot without resolutions
+
+        // console.log('***** slotValues: ' +  JSON.stringify(slotValues, null, 2));
+        //   SLOT: sport 
+
+        if (slotValues && typeof slotValues.sport.heardAs !== 'undefined') {
+            let toReach = new Date("Fri Jul 19 2019 20:00:00");
+            let countdown = Math.floor((toReach.getTime() - now.getTime()) / 1000);
+
+            let secondes = countdown % 60;
+            let minutes = Math.floor(countdown % 3600);
+            say = "Il reste " + minutes + " minutes, " + secondes + "secondes avant la prochaine épreuve " + slotValues.sport.heardAs;
+        }
+        else {
+            let toReach = new Date("Fri Jul 24 2024 00:00:00");
+            let countdown = Math.floor((toReach.getTime() - now.getTime()) / 1000);
+            if (countdown > 0) {
+                let secondes = countdown % 60;
+                let minutes = Math.floor(countdown % 3600 / 60);
+                let hours = Math.floor(countdown % 86400 / 3600);
+                let days = Math.floor(countdown / (60 * 60 * 24));
+
+                say = "Il reste " + days + " jours, " + hours + " heures, " + minutes + " minutes, " + secondes + " secondes, avant les jeux olympiques de Paris";
+            }
+            else {
+                say = "Les jeux olympiques de Paris ont déjà commencé";
+            }
+        }
+
+
+        return responseBuilder
+            .speak(say)
+            // .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const cameraManagerCommand_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'cameraManagerCommand' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        // delegate to Alexa to collect all the required slots 
+        const currentIntent = request.intent; 
+        if (request.dialogState && request.dialogState !== 'COMPLETED') { 
+            return handlerInput.responseBuilder
+                .addDelegateDirective(currentIntent)
+                .getResponse();
+
+        } 
+        let say = 'Hello from cameraManagerCommand. ';
+
+        let slotStatus = '';
+        let resolvedSlot;
+
+        let slotValues = getSlotValues(request.intent.slots); 
+        // getSlotValues returns .heardAs, .resolved, and .isValidated for each slot, according to request slot status codes ER_SUCCESS_MATCH, ER_SUCCESS_NO_MATCH, or traditional simple request slot without resolutions
+
+        // console.log('***** slotValues: ' +  JSON.stringify(slotValues, null, 2));
+        //   SLOT: pays 
+        if (slotValues.pays.heardAs) {
+            slotStatus += ' slot pays was heard as ' + slotValues.pays.heardAs + '. ';
+        } else {
+            slotStatus += 'slot pays is empty. ';
+        }
+        if (slotValues.pays.ERstatus === 'ER_SUCCESS_MATCH') {
+            slotStatus += 'a valid ';
+            if(slotValues.pays.resolved !== slotValues.pays.heardAs) {
+                slotStatus += 'synonym for ' + slotValues.pays.resolved + '. '; 
+                } else {
+                slotStatus += 'match. '
+            } // else {
+                //
+        }
+        if (slotValues.pays.ERstatus === 'ER_SUCCESS_NO_MATCH') {
+            slotStatus += 'which did not match any slot value. ';
+            console.log('***** consider adding "' + slotValues.pays.heardAs + '" to the custom slot type used by slot pays! '); 
+        }
+
+        if( (slotValues.pays.ERstatus === 'ER_SUCCESS_NO_MATCH') ||  (!slotValues.pays.heardAs) ) {
+            slotStatus += 'A few valid values are, ' + sayArray(getExampleSlotValues('cameraManagerCommand','pays'), 'or');
+        }
+        //   SLOT: sport 
+        if (slotValues.sport.heardAs) {
+            slotStatus += ' slot sport was heard as ' + slotValues.sport.heardAs + '. ';
+        } else {
+            slotStatus += 'slot sport is empty. ';
+        }
+        if (slotValues.sport.ERstatus === 'ER_SUCCESS_MATCH') {
+            slotStatus += 'a valid ';
+            if(slotValues.sport.resolved !== slotValues.sport.heardAs) {
+                slotStatus += 'synonym for ' + slotValues.sport.resolved + '. '; 
+                } else {
+                slotStatus += 'match. '
+            } // else {
+                //
+        }
+        if (slotValues.sport.ERstatus === 'ER_SUCCESS_NO_MATCH') {
+            slotStatus += 'which did not match any slot value. ';
+            console.log('***** consider adding "' + slotValues.sport.heardAs + '" to the custom slot type used by slot sport! '); 
+        }
+
+        if( (slotValues.sport.ERstatus === 'ER_SUCCESS_NO_MATCH') ||  (!slotValues.sport.heardAs) ) {
+            slotStatus += 'A few valid values are, ' + sayArray(getExampleSlotValues('cameraManagerCommand','sport'), 'or');
+        }
+
+        say += slotStatus;
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const podcast_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'podcast' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from podcast. ';
+
+        let slotStatus = '';
+        let resolvedSlot;
+
+        let slotValues = getSlotValues(request.intent.slots); 
+        // getSlotValues returns .heardAs, .resolved, and .isValidated for each slot, according to request slot status codes ER_SUCCESS_MATCH, ER_SUCCESS_NO_MATCH, or traditional simple request slot without resolutions
+
+        // console.log('***** slotValues: ' +  JSON.stringify(slotValues, null, 2));
+        //   SLOT: theme 
+        if (slotValues.theme.heardAs) {
+            slotStatus += ' slot theme was heard as ' + slotValues.theme.heardAs + '. ';
+        } else {
+            slotStatus += 'slot theme is empty. ';
+        }
+        if (slotValues.theme.ERstatus === 'ER_SUCCESS_MATCH') {
+            slotStatus += 'a valid ';
+            if(slotValues.theme.resolved !== slotValues.theme.heardAs) {
+                slotStatus += 'synonym for ' + slotValues.theme.resolved + '. '; 
+                } else {
+                slotStatus += 'match. '
+            } // else {
+                //
+        }
+        if (slotValues.theme.ERstatus === 'ER_SUCCESS_NO_MATCH') {
+            slotStatus += 'which did not match any slot value. ';
+            console.log('***** consider adding "' + slotValues.theme.heardAs + '" to the custom slot type used by slot theme! '); 
+        }
+
+        if( (slotValues.theme.ERstatus === 'ER_SUCCESS_NO_MATCH') ||  (!slotValues.theme.heardAs) ) {
+            slotStatus += 'A few valid values are, ' + sayArray(getExampleSlotValues('podcast','theme'), 'or');
+        }
+        
+        let tab = {
+            "sport": [
+                {
+                    "text": "Le nageur américain Michael Phelps, avec ses 28 médailles au total en 4 olympiades, est le sportif ayant récolté le plus de médailles.Il détient aussi le record de médailles d’or obtenues lors de Jeux olympiques avec 23 titres."
+                }
+            ],
+            "jo": [
+                {
+                    "text": "Les Jeux olympiques se tiennent tous les deux ans, les années paires, en alternant Jeux olympiques d’été et Jeux olympiques d’hiver. Originellement tenus dans le centre religieux d’Olympie, dans la Grèce antique, les Jeux sont rénovés par le baron français Pierre de Coubertin en 1894 lorsqu’il fonde le Comité international olympique."
+                },
+                {
+                    "text": "Les Jeux olympiques de 1896, également nommés Jeux de la première olympiade sont organisés en 1896 à Athènes en Grèce. Ce sont les premiers Jeux olympiques de l’ère moderne organisés par le Comité international olympique."
+                },
+                {
+                    "text": "Lors des premiers jeux olympiques de l’ère moderne, en 1896, il n’y avait que 12 pays participant. Aux derniers J.O il y en avait 208."
+                },
+                {
+                    "text": "Le Comité international olympique (CIO) est une organisation créée par Pierre de Coubertin en 18941, pour réinstaurer les Jeux olympiques antiques ainsi qu’organiser cet événement sportif tous les quatre ans. À partir de 1994, Jeux olympiques d’été et Jeux olympiques d’hiver seront alternés tous les deux ans."
+                },
+
+            ],
+            "pays": [
+                {
+                    "text": "Le football aux Jeux olympiques d’été est une discipline olympique depuis les Jeux olympiques de 1900 à Paris. Les Jeux olympiques furent la première compétition internationale de l’histoire du football, et subirent plusieurs changements en raison du professionnalisme, de la création de la coupe du monde ou du développement du football à travers le monde"
+                }
+            ]
+        };
+        if(slotValues && typeof slotValues.theme.heardAs !=="undefined")
+        {
+            let theme = slotValues.theme.heardAs;
+            let keyword;
+            let keyIsInArray = theme in tab ? true : false;
+            if(keyIsInArray)
+            {
+                keyword = theme;
+                let random = Math.random() * (0, tab[keyword].length);
+                let i = Math.floor(random);
+                say = tab[keyword][i].text;
+            }
+            else
+            {
+                say = "aucun podcast trouvé pour le theme " + theme;
+            }
+
+        }
+        else
+        {
+            let randomKey;
+            let count = 0;
+            
+            for (var key in tab) {
+                if (Math.random() < 1 / ++count) {
+                    randomKey = key;
+                }
+            }
+            let random = Math.random() * (0, tab[randomKey].length);
+            let i = Math.floor(random);
+            say = tab[randomKey][i].text;
+        }
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const getStats_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'getStats' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        let say = 'Hello from getStats. ';
+
+        let slotStatus = '';
+        let resolvedSlot;
+
+        let slotValues = getSlotValues(request.intent.slots); 
+        // getSlotValues returns .heardAs, .resolved, and .isValidated for each slot, according to request slot status codes ER_SUCCESS_MATCH, ER_SUCCESS_NO_MATCH, or traditional simple request slot without resolutions
+
+        // console.log('***** slotValues: ' +  JSON.stringify(slotValues, null, 2));
+        //   SLOT: sportif 
+        if (slotValues.sportif.heardAs) {
+            slotStatus += ' slot sportif was heard as ' + slotValues.sportif.heardAs + '. ';
+        } else {
+            slotStatus += 'slot sportif is empty. ';
+        }
+        if (slotValues.sportif.ERstatus === 'ER_SUCCESS_MATCH') {
+            slotStatus += 'a valid ';
+            if(slotValues.sportif.resolved !== slotValues.sportif.heardAs) {
+                slotStatus += 'synonym for ' + slotValues.sportif.resolved + '. '; 
+                } else {
+                slotStatus += 'match. '
+            } // else {
+                //
+        }
+        if (slotValues.sportif.ERstatus === 'ER_SUCCESS_NO_MATCH') {
+            slotStatus += 'which did not match any slot value. ';
+            console.log('***** consider adding "' + slotValues.sportif.heardAs + '" to the custom slot type used by slot sportif! '); 
+        }
+
+        if( (slotValues.sportif.ERstatus === 'ER_SUCCESS_NO_MATCH') ||  (!slotValues.sportif.heardAs) ) {
+            slotStatus += 'A few valid values are, ' + sayArray(getExampleSlotValues('getStats','sportif'), 'or');
+        }
+
+        say += slotStatus;
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const Personnalisation_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest' && request.intent.name === 'Personnalisation' ;
+    },
+    handle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        const responseBuilder = handlerInput.responseBuilder;
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+
+        // delegate to Alexa to collect all the required slots 
+        const currentIntent = request.intent; 
+        if (request.dialogState && request.dialogState !== 'COMPLETED') { 
+            return handlerInput.responseBuilder
+                .addDelegateDirective(currentIntent)
+                .getResponse();
+
+        } 
+        let say = 'Hello from Personnalisation. ';
+
+        let slotStatus = '';
+        let resolvedSlot;
+
+        let slotValues = getSlotValues(request.intent.slots); 
+        // getSlotValues returns .heardAs, .resolved, and .isValidated for each slot, according to request slot status codes ER_SUCCESS_MATCH, ER_SUCCESS_NO_MATCH, or traditional simple request slot without resolutions
+
+        // console.log('***** slotValues: ' +  JSON.stringify(slotValues, null, 2));
+        //   SLOT: user 
+        if (slotValues.user.heardAs) {
+            slotStatus += ' slot user was heard as ' + slotValues.user.heardAs + '. ';
+        } else {
+            slotStatus += 'slot user is empty. ';
+        }
+        if (slotValues.user.ERstatus === 'ER_SUCCESS_MATCH') {
+            slotStatus += 'a valid ';
+            if(slotValues.user.resolved !== slotValues.user.heardAs) {
+                slotStatus += 'synonym for ' + slotValues.user.resolved + '. '; 
+                } else {
+                slotStatus += 'match. '
+            } // else {
+                //
+        }
+        if (slotValues.user.ERstatus === 'ER_SUCCESS_NO_MATCH') {
+            slotStatus += 'which did not match any slot value. ';
+            console.log('***** consider adding "' + slotValues.user.heardAs + '" to the custom slot type used by slot user! '); 
+        }
+
+        if( (slotValues.user.ERstatus === 'ER_SUCCESS_NO_MATCH') ||  (!slotValues.user.heardAs) ) {
+            slotStatus += 'A few valid values are, ' + sayArray(getExampleSlotValues('Personnalisation','user'), 'or');
+        }
+        //   SLOT: questionA 
+        if (slotValues.questionA.heardAs) {
+            slotStatus += ' slot questionA was heard as ' + slotValues.questionA.heardAs + '. ';
+        } else {
+            slotStatus += 'slot questionA is empty. ';
+        }
+        if (slotValues.questionA.ERstatus === 'ER_SUCCESS_MATCH') {
+            slotStatus += 'a valid ';
+            if(slotValues.questionA.resolved !== slotValues.questionA.heardAs) {
+                slotStatus += 'synonym for ' + slotValues.questionA.resolved + '. '; 
+                } else {
+                slotStatus += 'match. '
+            } // else {
+                //
+        }
+        if (slotValues.questionA.ERstatus === 'ER_SUCCESS_NO_MATCH') {
+            slotStatus += 'which did not match any slot value. ';
+            console.log('***** consider adding "' + slotValues.questionA.heardAs + '" to the custom slot type used by slot questionA! '); 
+        }
+
+        if( (slotValues.questionA.ERstatus === 'ER_SUCCESS_NO_MATCH') ||  (!slotValues.questionA.heardAs) ) {
+            slotStatus += 'A few valid values are, ' + sayArray(getExampleSlotValues('Personnalisation','questionA'), 'or');
+        }
+        //   SLOT: questionB 
+        if (slotValues.questionB.heardAs) {
+            slotStatus += ' slot questionB was heard as ' + slotValues.questionB.heardAs + '. ';
+        } else {
+            slotStatus += 'slot questionB is empty. ';
+        }
+        if (slotValues.questionB.ERstatus === 'ER_SUCCESS_MATCH') {
+            slotStatus += 'a valid ';
+            if(slotValues.questionB.resolved !== slotValues.questionB.heardAs) {
+                slotStatus += 'synonym for ' + slotValues.questionB.resolved + '. '; 
+                } else {
+                slotStatus += 'match. '
+            } // else {
+                //
+        }
+        if (slotValues.questionB.ERstatus === 'ER_SUCCESS_NO_MATCH') {
+            slotStatus += 'which did not match any slot value. ';
+            console.log('***** consider adding "' + slotValues.questionB.heardAs + '" to the custom slot type used by slot questionB! '); 
+        }
+
+        if( (slotValues.questionB.ERstatus === 'ER_SUCCESS_NO_MATCH') ||  (!slotValues.questionB.heardAs) ) {
+            slotStatus += 'A few valid values are, ' + sayArray(getExampleSlotValues('Personnalisation','questionB'), 'or');
+        }
+        //   SLOT: questionC 
+        if (slotValues.questionC.heardAs) {
+            slotStatus += ' slot questionC was heard as ' + slotValues.questionC.heardAs + '. ';
+        } else {
+            slotStatus += 'slot questionC is empty. ';
+        }
+        if (slotValues.questionC.ERstatus === 'ER_SUCCESS_MATCH') {
+            slotStatus += 'a valid ';
+            if(slotValues.questionC.resolved !== slotValues.questionC.heardAs) {
+                slotStatus += 'synonym for ' + slotValues.questionC.resolved + '. '; 
+                } else {
+                slotStatus += 'match. '
+            } // else {
+                //
+        }
+        if (slotValues.questionC.ERstatus === 'ER_SUCCESS_NO_MATCH') {
+            slotStatus += 'which did not match any slot value. ';
+            console.log('***** consider adding "' + slotValues.questionC.heardAs + '" to the custom slot type used by slot questionC! '); 
+        }
+
+        if( (slotValues.questionC.ERstatus === 'ER_SUCCESS_NO_MATCH') ||  (!slotValues.questionC.heardAs) ) {
+            slotStatus += 'A few valid values are, ' + sayArray(getExampleSlotValues('Personnalisation','questionC'), 'or');
+        }
+
+        say += slotStatus;
+
+
+        return responseBuilder
+            .speak(say)
+            // .reprompt('try again, ' + say)
+            .getResponse();
+    },
+};
+
+const LaunchRequest_Handler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'LaunchRequest';
+    },
+    handle(handlerInput) {
+        const responseBuilder = handlerInput.responseBuilder;
+
+        let say = `D'accord, je lance l'assistant vocal des ${invocationName} proposé par France.tv`;
+
+        let skillTitle = capitalize(invocationName);
+
+
+        return responseBuilder
+            .speak(say)
+            .reprompt('try again, ' + say)
+            .withStandardCard('Welcome!', 
+              'Hello!\nThis is a card for your skill, ' + skillTitle,
+               welcomeCardImg.smallImageUrl, welcomeCardImg.largeImageUrl)
+            .getResponse();
+    },
+};
+
+const SessionEndedHandler =  {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'SessionEndedRequest';
+    },
+    handle(handlerInput) {
+        console.log(`Session ended with reason: ${handlerInput.requestEnvelope.request.reason}`);
+        return handlerInput.responseBuilder.getResponse();
+    }
+};
+
+const ErrorHandler =  {
+    canHandle() {
+        return true;
+    },
+    handle(handlerInput, error) {
+        const request = handlerInput.requestEnvelope.request;
+
+        console.log(`Error handled: ${error.message}`);
+        // console.log(`Original Request was: ${JSON.stringify(request, null, 2)}`);
+
+        return handlerInput.responseBuilder
+            .speak('Sorry, an error occurred.  Please say again.')
+            .reprompt('Sorry, an error occurred.  Please say again.')
+            .getResponse();
+    }
+};
+
+
+// 2. Constants ===========================================================================
+
+    // Here you can define static data, to be used elsewhere in your code.  For example: 
+    //    const myString = "Hello World";
+    //    const myArray  = [ "orange", "grape", "strawberry" ];
+    //    const myObject = { "city": "Boston",  "state":"Massachusetts" };
+
+const APP_ID = undefined;  // TODO replace with your Skill ID (OPTIONAL).
+
+// 3.  Helper Functions ===================================================================
+
+function capitalize(myString) {
+
+     return myString.replace(/(?:^|\s)\S/g, function(a) { return a.toUpperCase(); }) ;
+}
+
+ 
+function randomElement(myArray) { 
+    return(myArray[Math.floor(Math.random() * myArray.length)]); 
+} 
+ 
+function stripSpeak(str) { 
+    return(str.replace('<speak>', '').replace('</speak>', '')); 
+} 
+ 
+ 
+ 
+ 
+function getSlotValues(filledSlots) { 
+    const slotValues = {}; 
+ 
+    Object.keys(filledSlots).forEach((item) => { 
+        const name  = filledSlots[item].name; 
+ 
+        if (filledSlots[item] && 
+            filledSlots[item].resolutions && 
+            filledSlots[item].resolutions.resolutionsPerAuthority[0] && 
+            filledSlots[item].resolutions.resolutionsPerAuthority[0].status && 
+            filledSlots[item].resolutions.resolutionsPerAuthority[0].status.code) { 
+            switch (filledSlots[item].resolutions.resolutionsPerAuthority[0].status.code) { 
+                case 'ER_SUCCESS_MATCH': 
+                    slotValues[name] = { 
+                        heardAs: filledSlots[item].value, 
+                        resolved: filledSlots[item].resolutions.resolutionsPerAuthority[0].values[0].value.name, 
+                        ERstatus: 'ER_SUCCESS_MATCH' 
+                    }; 
+                    break; 
+                case 'ER_SUCCESS_NO_MATCH': 
+                    slotValues[name] = { 
+                        heardAs: filledSlots[item].value, 
+                        resolved: '', 
+                        ERstatus: 'ER_SUCCESS_NO_MATCH' 
+                    }; 
+                    break; 
+                default: 
+                    break; 
+            } 
+        } else { 
+            slotValues[name] = { 
+                heardAs: filledSlots[item].value, 
+                resolved: '', 
+                ERstatus: '' 
+            }; 
+        } 
+    }, this); 
+ 
+    return slotValues; 
+} 
+ 
+function getExampleSlotValues(intentName, slotName) { 
+ 
+    let examples = []; 
+    let slotType = ''; 
+    let slotValuesFull = []; 
+ 
+    let intents = model.interactionModel.languageModel.intents; 
+    for (let i = 0; i < intents.length; i++) { 
+        if (intents[i].name == intentName) { 
+            let slots = intents[i].slots; 
+            for (let j = 0; j < slots.length; j++) { 
+                if (slots[j].name === slotName) { 
+                    slotType = slots[j].type; 
+ 
+                } 
+            } 
+        } 
+         
+    } 
+    let types = model.interactionModel.languageModel.types; 
+    for (let i = 0; i < types.length; i++) { 
+        if (types[i].name === slotType) { 
+            slotValuesFull = types[i].values; 
+        } 
+    } 
+ 
+ 
+    examples.push(slotValuesFull[0].name.value); 
+    examples.push(slotValuesFull[1].name.value); 
+    examples.push(slotValuesFull[2].name.value); 
+    examples.push(slotValuesFull[3].name.value); 
+    examples.push(slotValuesFull[4].name.value); 
+    if (slotValuesFull.length > 5) { 
+        examples.push(slotValuesFull[5].name.value); 
+    } 
+ 
+ 
+    return examples; 
+} 
+ 
+function sayArray(myData, penultimateWord = 'and') { 
+    let result = ''; 
+ 
+    myData.forEach(function(element, index, arr) { 
+ 
+        if (index === 0) { 
+            result = element; 
+        } else if (index === myData.length - 1) { 
+            result += ` ${penultimateWord} ${element}`; 
+        } else { 
+            result += `, ${element}`; 
+        } 
+    }); 
+    return result; 
+} 
+function supportsDisplay(handlerInput) // returns true if the skill is running on a device with a display (Echo Show, Echo Spot, etc.) 
+{                                      //  Enable your skill for display as shown here: https://alexa.design/enabledisplay 
+    const hasDisplay = 
+        handlerInput.requestEnvelope.context && 
+        handlerInput.requestEnvelope.context.System && 
+        handlerInput.requestEnvelope.context.System.device && 
+        handlerInput.requestEnvelope.context.System.device.supportedInterfaces && 
+        handlerInput.requestEnvelope.context.System.device.supportedInterfaces.Display; 
+ 
+    return hasDisplay; 
+} 
+ 
+ 
+const welcomeCardImg = { 
+    smallImageUrl: "https://s3.amazonaws.com/skill-images-789/cards/card_plane720_480.png", 
+    largeImageUrl: "https://s3.amazonaws.com/skill-images-789/cards/card_plane1200_800.png" 
+ 
+ 
+}; 
+ 
+const DisplayImg1 = { 
+    title: 'Jet Plane', 
+    url: 'https://s3.amazonaws.com/skill-images-789/display/plane340_340.png' 
+}; 
+const DisplayImg2 = { 
+    title: 'Starry Sky', 
+    url: 'https://s3.amazonaws.com/skill-images-789/display/background1024_600.png' 
+ 
+}; 
+ 
+function getCustomIntents() { 
+    const modelIntents = model.interactionModel.languageModel.intents; 
+ 
+    let customIntents = []; 
+ 
+ 
+    for (let i = 0; i < modelIntents.length; i++) { 
+ 
+        if(modelIntents[i].name.substring(0,7) != "AMAZON." && modelIntents[i].name !== "LaunchRequest" ) { 
+            customIntents.push(modelIntents[i]); 
+        } 
+    } 
+    return customIntents; 
+} 
+ 
+function getSampleUtterance(intent) { 
+ 
+    return randomElement(intent.samples); 
+ 
+} 
+ 
+function getPreviousIntent(attrs) { 
+ 
+    if (attrs.history && attrs.history.length > 1) { 
+        return attrs.history[attrs.history.length - 2].IntentRequest; 
+ 
+    } else { 
+        return false; 
+    } 
+ 
+} 
+ 
+function getPreviousSpeechOutput(attrs) { 
+ 
+    if (attrs.lastSpeechOutput && attrs.history.length > 1) { 
+        return attrs.lastSpeechOutput; 
+ 
+    } else { 
+        return false; 
+    } 
+ 
+} 
+ 
+function timeDelta(t1, t2) { 
+ 
+    const dt1 = new Date(t1); 
+    const dt2 = new Date(t2); 
+    const timeSpanMS = dt2.getTime() - dt1.getTime(); 
+    const span = { 
+        "timeSpanMIN": Math.floor(timeSpanMS / (1000 * 60 )), 
+        "timeSpanHR": Math.floor(timeSpanMS / (1000 * 60 * 60)), 
+        "timeSpanDAY": Math.floor(timeSpanMS / (1000 * 60 * 60 * 24)), 
+        "timeSpanDesc" : "" 
+    }; 
+ 
+ 
+    if (span.timeSpanHR < 2) { 
+        span.timeSpanDesc = span.timeSpanMIN + " minutes"; 
+    } else if (span.timeSpanDAY < 2) { 
+        span.timeSpanDesc = span.timeSpanHR + " hours"; 
+    } else { 
+        span.timeSpanDesc = span.timeSpanDAY + " days"; 
+    } 
+ 
+ 
+    return span; 
+ 
+} 
+ 
+ 
+const InitMemoryAttributesInterceptor = { 
+    process(handlerInput) { 
+        let sessionAttributes = {}; 
+        if(handlerInput.requestEnvelope.session['new']) { 
+ 
+            sessionAttributes = handlerInput.attributesManager.getSessionAttributes(); 
+ 
+            let memoryAttributes = getMemoryAttributes(); 
+ 
+            if(Object.keys(sessionAttributes).length === 0) { 
+ 
+                Object.keys(memoryAttributes).forEach(function(key) {  // initialize all attributes from global list 
+ 
+                    sessionAttributes[key] = memoryAttributes[key]; 
+ 
+                }); 
+ 
+            } 
+            handlerInput.attributesManager.setSessionAttributes(sessionAttributes); 
+ 
+ 
+        } 
+    } 
+}; 
+ 
+const RequestHistoryInterceptor = { 
+    process(handlerInput) { 
+ 
+        const thisRequest = handlerInput.requestEnvelope.request; 
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes(); 
+ 
+        let history = sessionAttributes['history'] || []; 
+ 
+        let IntentRequest = {}; 
+        if (thisRequest.type === 'IntentRequest' ) { 
+ 
+            let slots = []; 
+ 
+            IntentRequest = { 
+                'IntentRequest' : thisRequest.intent.name 
+            }; 
+ 
+            if (thisRequest.intent.slots) { 
+ 
+                for (let slot in thisRequest.intent.slots) { 
+                    let slotObj = {}; 
+                    slotObj[slot] = thisRequest.intent.slots[slot].value; 
+                    slots.push(slotObj); 
+                } 
+ 
+                IntentRequest = { 
+                    'IntentRequest' : thisRequest.intent.name, 
+                    'slots' : slots 
+                }; 
+ 
+            } 
+ 
+        } else { 
+            IntentRequest = {'IntentRequest' : thisRequest.type}; 
+        } 
+        if(history.length > maxHistorySize - 1) { 
+            history.shift(); 
+        } 
+        history.push(IntentRequest); 
+ 
+        handlerInput.attributesManager.setSessionAttributes(sessionAttributes); 
+ 
+    } 
+ 
+}; 
+ 
+ 
+ 
+ 
+const RequestPersistenceInterceptor = { 
+    process(handlerInput) { 
+ 
+        if(handlerInput.requestEnvelope.session['new']) { 
+ 
+            return new Promise((resolve, reject) => { 
+ 
+                handlerInput.attributesManager.getPersistentAttributes() 
+ 
+                    .then((sessionAttributes) => { 
+                        sessionAttributes = sessionAttributes || {}; 
+ 
+ 
+                        sessionAttributes['launchCount'] += 1; 
+ 
+                        handlerInput.attributesManager.setSessionAttributes(sessionAttributes); 
+ 
+                        handlerInput.attributesManager.savePersistentAttributes() 
+                            .then(() => { 
+                                resolve(); 
+                            }) 
+                            .catch((err) => { 
+                                reject(err); 
+                            }); 
+                    }); 
+ 
+            }); 
+ 
+        } // end session['new'] 
+    } 
+}; 
+ 
+ 
+const ResponseRecordSpeechOutputInterceptor = { 
+    process(handlerInput, responseOutput) { 
+ 
+        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes(); 
+        let lastSpeechOutput = { 
+            "outputSpeech":responseOutput.outputSpeech.ssml, 
+            "reprompt":responseOutput.reprompt.outputSpeech.ssml 
+        }; 
+ 
+        sessionAttributes['lastSpeechOutput'] = lastSpeechOutput; 
+ 
+        handlerInput.attributesManager.setSessionAttributes(sessionAttributes); 
+ 
+    } 
+}; 
+ 
+const ResponsePersistenceInterceptor = { 
+    process(handlerInput, responseOutput) { 
+ 
+        const ses = (typeof responseOutput.shouldEndSession == "undefined" ? true : responseOutput.shouldEndSession); 
+ 
+        if(ses || handlerInput.requestEnvelope.request.type == 'SessionEndedRequest') { // skill was stopped or timed out 
+ 
+            let sessionAttributes = handlerInput.attributesManager.getSessionAttributes(); 
+ 
+            sessionAttributes['lastUseTimestamp'] = new Date(handlerInput.requestEnvelope.request.timestamp).getTime(); 
+ 
+            handlerInput.attributesManager.setPersistentAttributes(sessionAttributes); 
+ 
+            return new Promise((resolve, reject) => { 
+                handlerInput.attributesManager.savePersistentAttributes() 
+                    .then(() => { 
+                        resolve(); 
+                    }) 
+                    .catch((err) => { 
+                        reject(err); 
+                    }); 
+ 
+            }); 
+ 
+        } 
+ 
+    } 
+}; 
+ 
+ 
+ 
+// 4. Exports handler function and setup ===================================================
+const skillBuilder = Alexa.SkillBuilders.standard();
+exports.handler = skillBuilder
+    .addRequestHandlers(
+        AMAZON_CancelIntent_Handler, 
+        AMAZON_HelpIntent_Handler, 
+        AMAZON_StopIntent_Handler, 
+        AMAZON_NavigateHomeIntent_Handler, 
+        getInformation_Handler, 
+        AMAZON_PauseIntent_Handler, 
+        AMAZON_ResumeIntent_Handler, 
+        AMAZON_MoreIntent_Handler, 
+        AMAZON_NavigateSettingsIntent_Handler, 
+        AMAZON_NextIntent_Handler, 
+        AMAZON_PageUpIntent_Handler, 
+        AMAZON_PageDownIntent_Handler, 
+        AMAZON_PreviousIntent_Handler, 
+        AMAZON_ScrollRightIntent_Handler, 
+        AMAZON_ScrollDownIntent_Handler, 
+        AMAZON_ScrollLeftIntent_Handler, 
+        AMAZON_ScrollUpIntent_Handler, 
+        getCountDown_Handler, 
+        cameraManagerCommand_Handler, 
+        podcast_Handler, 
+        getStats_Handler, 
+        Personnalisation_Handler, 
+        LaunchRequest_Handler, 
+        SessionEndedHandler
+    )
+    .addErrorHandlers(ErrorHandler)
+    .addRequestInterceptors(InitMemoryAttributesInterceptor)
+    .addRequestInterceptors(RequestHistoryInterceptor)
+
+   // .addResponseInterceptors(ResponseRecordSpeechOutputInterceptor)
+
+ // .addRequestInterceptors(RequestPersistenceInterceptor)
+ // .addResponseInterceptors(ResponsePersistenceInterceptor)
+
+ // .withTableName("askMemorySkillTable")
+ // .withAutoCreateTable(true)
+
+    .lambda();
+
+
+// End of Skill code -------------------------------------------------------------
+// Static Language Model for reference
+
+const model = {
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "jeux olympiques",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "getInformation",
+          "slots": [
+            {
+              "name": "pays",
+              "type": "AMAZON.Country"
+            }
+          ],
+          "samples": [
+            "Est ce que {pays} sera présent aux J.O.",
+            "Donne moi une liste de pays présent aux Jeux Olympiques"
+          ]
+        },
+        {
+          "name": "AMAZON.PauseIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.ResumeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.MoreIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateSettingsIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NextIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.PageUpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.PageDownIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.PreviousIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.ScrollRightIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.ScrollDownIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.ScrollLeftIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.ScrollUpIntent",
+          "samples": []
+        },
+        {
+          "name": "getCountDown",
+          "slots": [
+            {
+              "name": "sport",
+              "type": "AMAZON.Sport"
+            }
+          ],
+          "samples": [
+            "Dans combien de temps les épreuves {sport} commencent",
+            "Quand commence les jeux olympiques"
+          ]
+        },
+        {
+          "name": "cameraManagerCommand",
+          "slots": [
+            {
+              "name": "pays",
+              "type": "AMAZON.Country",
+              "samples": [
+                "{pays}"
+              ]
+            },
+            {
+              "name": "sport",
+              "type": "AMAZON.Sport",
+              "samples": [
+                "{sport}"
+              ]
+            }
+          ],
+          "samples": [
+            "montre moi {pays} sur l'épreuve {sport} ",
+            "Lance la gestion vocal des replay"
+          ]
+        },
+        {
+          "name": "podcast",
+          "slots": [
+            {
+              "name": "theme",
+              "type": "theme"
+            }
+          ],
+          "samples": [
+            "informe moi sur {theme}",
+            "podcast",
+            "informe moi",
+            "quelles sont les news",
+            "lance un podcast"
+          ]
+        },
+        {
+          "name": "getStats",
+          "slots": [
+            {
+              "name": "sportif",
+              "type": "sportif"
+            }
+          ],
+          "samples": [
+            "combien combien de médaille a gagné {sportif}"
+          ]
+        },
+        {
+          "name": "Personnalisation",
+          "slots": [
+            {
+              "name": "user",
+              "type": "AMAZON.FirstName"
+            },
+            {
+              "name": "questionA",
+              "type": "AMAZON.Sport",
+              "samples": [
+                "{questionA} "
+              ]
+            },
+            {
+              "name": "questionB",
+              "type": "AMAZON.Country",
+              "samples": [
+                "{questionB}"
+              ]
+            },
+            {
+              "name": "questionC",
+              "type": "sportif",
+              "samples": [
+                "{questionC}"
+              ]
+            }
+          ],
+          "samples": [
+            "{questionC}",
+            "{user}",
+            "{questionB}",
+            "{questionA}",
+            "lance la personnalisation"
+          ]
+        },
+        {
+          "name": "LaunchRequest"
+        }
+      ],
+      "types": [
+        {
+          "name": "pays",
+          "values": [
+            {
+              "name": {
+                "value": "l'italie"
+              }
+            },
+            {
+              "name": {
+                "value": "l'allemagne"
+              }
+            },
+            {
+              "name": {
+                "value": "la corée du nord"
+              }
+            },
+            {
+              "name": {
+                "value": "la chine"
+              }
+            },
+            {
+              "name": {
+                "value": "le japon"
+              }
+            },
+            {
+              "name": {
+                "value": "le royaume-unis"
+              }
+            },
+            {
+              "name": {
+                "value": "la france"
+              }
+            }
+          ]
+        },
+        {
+          "name": "AMAZON.Sport",
+          "values": [
+            {
+              "name": {
+                "value": "lancé de disque"
+              }
+            },
+            {
+              "name": {
+                "value": "lancé de poids"
+              }
+            },
+            {
+              "name": {
+                "value": "voleyball"
+              }
+            },
+            {
+              "name": {
+                "value": "handball"
+              }
+            },
+            {
+              "name": {
+                "value": "basket"
+              }
+            },
+            {
+              "name": {
+                "value": "basketball"
+              }
+            },
+            {
+              "name": {
+                "value": "football"
+              }
+            },
+            {
+              "name": {
+                "value": "natation"
+              }
+            }
+          ]
+        },
+        {
+          "name": "AMAZON.Country",
+          "values": [
+            {
+              "name": {
+                "value": "espagne"
+              }
+            },
+            {
+              "name": {
+                "value": "brésile"
+              }
+            },
+            {
+              "name": {
+                "value": "italie"
+              }
+            },
+            {
+              "name": {
+                "value": "australie"
+              }
+            },
+            {
+              "name": {
+                "value": "allemagne"
+              }
+            },
+            {
+              "name": {
+                "value": "royaume-unis"
+              }
+            },
+            {
+              "name": {
+                "value": "pays-bas"
+              }
+            },
+            {
+              "name": {
+                "value": "france"
+              }
+            }
+          ]
+        },
+        {
+          "name": "sportif",
+          "values": [
+            {
+              "name": {
+                "value": "florence lepron"
+              }
+            }
+          ]
+        },
+        {
+          "name": "AMAZON.FirstName",
+          "values": [
+            {
+              "name": {
+                "value": "rémy"
+              }
+            },
+            {
+              "name": {
+                "value": "mahel"
+              }
+            },
+            {
+              "name": {
+                "value": "cyril"
+              }
+            },
+            {
+              "name": {
+                "value": "victor"
+              }
+            },
+            {
+              "name": {
+                "value": "amandine"
+              }
+            },
+            {
+              "name": {
+                "value": "thomas"
+              }
+            },
+            {
+              "name": {
+                "value": "ito"
+              }
+            },
+            {
+              "name": {
+                "value": "rainald"
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme",
+          "values": [
+            {
+              "name": {
+                "value": "pays",
+                "synonyms":[
+                    "les pays"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "sport",
+                "synonyms":[
+                    "sports",
+                    "le sport",
+                    "les sports"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "jo",
+                "synonyms": [
+                  "jeux olympiques",
+                  "les jo",
+                  "les jeux olympiques"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "dialog": {
+      "intents": [
+        {
+          "name": "cameraManagerCommand",
+          "confirmationRequired": true,
+          "prompts": {
+            "confirmation": "Confirm.Intent.918251541557"
+          },
+          "slots": [
+            {
+              "name": "pays",
+              "type": "AMAZON.Country",
+              "confirmationRequired": false,
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.918251541557.496964397759"
+              }
+            },
+            {
+              "name": "sport",
+              "type": "AMAZON.Sport",
+              "confirmationRequired": false,
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.918251541557.450822037080"
+              }
+            }
+          ]
+        },
+        {
+          "name": "getInformation",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "pays",
+              "type": "AMAZON.Country",
+              "confirmationRequired": false,
+              "elicitationRequired": false,
+              "prompts": {},
+              "validations": [
+                {
+                  "type": "isInSet",
+                  "prompt": "Slot.Validation.1511183188236.232793084348.1159667440802",
+                  "values": [
+                    "l'italie",
+                    "l'espagne",
+                    "le royaume-unis",
+                    "l'allemagne",
+                    "la france",
+                    "le brésil"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Personnalisation",
+          "confirmationRequired": true,
+          "prompts": {
+            "confirmation": "Confirm.Intent.458856135470"
+          },
+          "slots": [
+            {
+              "name": "user",
+              "type": "AMAZON.FirstName",
+              "confirmationRequired": false,
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.458856135470.50238011691"
+              }
+            },
+            {
+              "name": "questionA",
+              "type": "AMAZON.Sport",
+              "confirmationRequired": false,
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.458856135470.1133551959616"
+              }
+            },
+            {
+              "name": "questionB",
+              "type": "AMAZON.Country",
+              "confirmationRequired": false,
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.458856135470.342582444937"
+              }
+            },
+            {
+              "name": "questionC",
+              "type": "sportif",
+              "confirmationRequired": false,
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.501618900571.535519171911"
+              }
+            }
+          ]
+        }
+      ],
+      "delegationStrategy": "ALWAYS"
+    },
+    "prompts": [
+      {
+        "id": "Confirm.Intent.69327333396",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "bravo "
+          },
+          {
+            "type": "PlainText",
+            "value": "félicitations"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.1123139985067.101656674686",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Où allez-vous ?"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.1123139985067.1279388537271",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "D'où partez-vous"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.1123139985067.814054319669",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Quand souhaitez-vous partir"
+          }
+        ]
+      },
+      {
+        "id": "Confirm.Intent.1123139985067",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Vous souhaitez partir {travelDate} pour aller à {toCity} depuis {fromCity}"
+          }
+        ]
+      },
+      {
+        "id": "Confirm.Intent.918251541557",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Désolé, aucun replay n'est disponible"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.918251541557.496964397759",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Quel pays voulez-vous suivre"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.918251541557.450822037080",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Quelle épreuve voulez-vous regarder "
+          }
+        ]
+      },
+      {
+        "id": "Slot.Validation.1511183188236.232793084348.1159667440802",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "{pays} sera bien présent aux jeux olympiques de Paris"
+          }
+        ]
+      },
+      {
+        "id": "Confirm.Intent.1225763445427",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "félicitations, votre score est de deux sur deux"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.1535547958325.875469618155",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Quel pays a remporté les précédents jeux olympiques"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.1535547958325.1266448723150",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Quel sport rassemble le plus d'audience pendant les jeux olympiques"
+          }
+        ]
+      },
+      {
+        "id": "Confirm.Intent.458856135470",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Très bien, je vous prépare un programme centré sur {questionA} , {questionB} , {questionC} . Merci {user}"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.458856135470.50238011691",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Bonjour, je suis alexa, votre assistant vocal préféré qui va vous accompagné pour suivre les jeux olympiques. Afin que la personnalisation de votre programme soit plus agréable, je souhaiterai savoir comment je dois vous appeler"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.458856135470.1133551959616",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Parfait, merci {user} . Afin de visaliser la création de votre programme, je souhairais savoir quel est votre sport préféré"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.458856135470.342582444937",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Je prends note, nous arrivons à la derniers question . Quel pays soutiens tu pendant les jeux olympiques"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.501618900571.535519171911",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Merci {user} , je vous prépare un programme concentré sur {questionA} et {questionB} , Souhaitez-vous suivre une autre chose"
+          }
+        ]
+      }
+    ]
+  }
+};
