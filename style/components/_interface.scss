@@ -3,7 +3,7 @@
     padding: 20px 20px 0 20px;
 
     @include desktop {
-        padding: 100px 0 0;
+        padding: 100px 10px;
     }
 
     &__txt {
@@ -16,7 +16,7 @@
         text-align: center;
 
         @include desktop {
-            margin: 120px auto 70px auto;
+            margin: 0px auto 70px auto;
         }
 
         span {
