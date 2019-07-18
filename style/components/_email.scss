@@ -1,0 +1,39 @@
+.email {
+		margin: 30px 10px;
+		display: flex;
+		flex-direction: column;
+
+		&Part1__title {
+			font-size: 32px;
+			margin: 0 0 40px 0;
+
+			&--colored {
+				color: $blue;
+			}
+		}
+
+		&Form {
+		display: flex;
+		width: 100%;
+
+			&__input {
+				background: $blue;
+				color: $white;
+				width: 70%;
+				padding: 15px;
+				box-sizing: border-box;
+				border-radius: 4px 0 0 4px;
+				font-size: 18px;
+			}
+
+			&__submit {
+				width: 30%;
+				background: $orange;
+				border-radius: 0px 4px 4px 0px;
+				color: $white;
+				font-size: 18px;
+				cursor: pointer;
+			}
+		}
+
+	}
