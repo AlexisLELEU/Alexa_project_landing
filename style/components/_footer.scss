@@ -4,6 +4,10 @@
 	padding: 40px 20px;
 	font-size: 24px;
 
+	@include desktop {
+		padding: 40px 170px;
+	}
+
 	&__header {
 		display: flex;
 		justify-content: space-between;
@@ -15,7 +19,7 @@
 	&__footer {
 		width: 60%;
 		margin: 0 auto;
-		
+
 		.footerFooter {
 			&__title {
 				text-align:center;
