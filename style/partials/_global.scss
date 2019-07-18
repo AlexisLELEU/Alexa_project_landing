@@ -3,13 +3,22 @@
     margin: 0 auto;
 }
 
+h1, h2, h3, li, span, p, button {
+	font-family: $helve;
+}
+
 a {
-    color: inherit;
-    text-decoration: none;
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+	
 }
 
 .only_mobile {
-    @include tablet {
-        display: none !important;
-    }
-}
+  @include tablet {
+      display: none !important;
+  }
+ }
+
