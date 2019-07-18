@@ -1,0 +1,22 @@
+// SCREEN SIZE
+$desktop: 1023px;
+$tablet: 768px;
+
+// MIXIN SCREEN SIZE
+@mixin isMobile {
+  @media (max-width: #{$tablet}) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (min-width: #{$tablet}) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: #{$desktop}) {
+    @content;
+  }
+}
