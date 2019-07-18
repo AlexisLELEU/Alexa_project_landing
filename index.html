@@ -1,16 +1,94 @@
 <!doctype html>
 <html lang="fr">
+
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1">
   <title></title>
   <link rel="stylesheet" href="style/style.css">
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.5.0/css/swiper.css">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.5.0/css/swiper.min.css">
 </head>
-<body>
 
-	<section class="realTime">
+<body>
+  <div class="wrapper">
+    <header class="header">
+      <div>
+        <img class="header__logo" src="./img/france·hub.png" alt="logo">
+        <nav class="header__nav">
+          <ul>
+            <li class="header__nav__item">
+              <a href="#">Pourquoi notre assistant ?</a>
+            </li>
+            <li class="header__nav__item">
+              <a href="#">Fonctionnalités</a>
+            </li>
+            <li class="header__nav__item">
+              <a href="#">Notre mission</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+      <a class="header__cta" href="#">C'est parti !</a>
+    </header>
+
+    <section class="intro">
+      <div class="intro__ctn">
+        <h1 class="intro__ttl">
+          "Ne regardez plus les Jeux Olympiques
+          <span>Vivez les !"</span>
+        </h1>
+        <p class="intro__txt">
+          Vivez une expérience vocale inédite !
+          <br>Programmez votre diffusion et
+          <br>commandez vocalement vos replays.
+        </p>
+        <a class="intro__btn" href="#">
+          C'est parti
+        </a>
+        <span>Convaincu(e) ? On se charge de votre nouvelle expérience 💪</span>
+      </div>
+
+
+	
+
+      <figure class="intro__img">
+        <img src="./img/Rectangle.jpg" alt="rectangle">
+      </figure>
+    </section>
+
+    <section class="interface">
+      <p class="interface__txt">francetv vous propose <span>une interface </span>pour répondre à<span> vos
+          besoins</span></p>
+      <div class="interface__ctn">
+        <div>
+          <div class="interface__ctn__txt">
+            <p>
+              <span>Demandez lui !</span>
+              "&nbsp;Alexa ! lance moi le direct de France 2&nbsp;"
+            </p>
+          </div>
+          <figure class="interface__ctn__img">
+            <img src="./img/interface-1.jpg" alt="interface">
+          </figure>
+        </div>
+        <div class="reverse">
+          <div class="interface__ctn__txt">
+            <p>
+              <span>Demandez lui !</span>
+              "&nbsp;Alexa ! Affiche moi le classement des pays&nbsp;"
+            </p>
+          </div>
+
+          <figure class="interface__ctn__img">
+            <img src="./img/interface-2.jpg" alt="interface">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="realTime">
 <!--
 	
 		<h2 class="realTime__title">
@@ -60,9 +138,73 @@
 				<div class="swiper-container swiper-container-second">
 
 				<div class="swiper-wrapper">
-					<div class="swiper-slide">Slide 1</div>
-					<div class="swiper-slide">Slide 2</div>
-					<div class="swiper-slide">Slide 3</div>
+					<div class="swiper-slide">
+							
+							<div class="commentary">
+								<div class="commentaryHeader">
+									<img class="commentaryHeader__image" src="./img/avatar-1.png" alt="avatar">
+									<div class="commentaryHeader__infos">
+										<h3 class="commentaryInfo__title">François Duhamel</h3>
+										<div class="commentaryStars">
+											<span class="commentaryStars__item">
+												<img src="./img/star.png" alt="étoile">
+												<img src="./img/star.png" alt="étoile">
+												<img src="./img/star.png" alt="étoile">
+												<img src="./img/star.png" alt="étoile">
+												<img src="./img/star.png" alt="étoile">
+											</span>
+										</div>
+									</div>
+								</div>
+								<p class="commentary__content">
+									J'en ai toujours rêvé et c'est maintenant possible ! Merci France Hub !
+								</p>
+							</div>
+
+					</div>
+					<div class="swiper-slide">
+						
+						<div class="commentary">
+								<div class="commentaryHeader">
+									<img class="commentaryHeader__image" src="./img/avatar-2.png" alt="avatar">
+									<div class="commentaryHeader__infos">
+										<h3 class="commentaryInfo__title">Robert Buisson</h3>
+										<div class="commentaryStars">
+											<span class="commentaryStars__item">
+												<img src="./img/star.png" alt="étoile">
+												<img src="./img/star.png" alt="étoile">
+												<img src="./img/star.png" alt="étoile">
+												<img src="./img/star.png" alt="étoile">
+											</span>
+										</div>
+									</div>
+								</div>
+								<p class="commentary__content">
+									Génial, plus besoin de me lever pour aller chercher la télécommande. Je parle et choisi ce que je souhaite voir et c’est parti !
+								</p>
+							</div>
+
+					</div>
+					<div class="swiper-slide">
+						
+						<div class="commentary">
+								<div class="commentaryHeader">
+									<img class="commentaryHeader__image" src="./img/avatar-3.png" alt="avatar">
+									<div class="commentaryHeader__infos">
+										<h3 class="commentaryInfo__title">Jonathan Lambert</h3>
+										<div class="commentaryStars">
+											<span class="commentaryStars__item">
+												<img src="./img/star.png" alt="étoile">
+												<img src="./img/star.png" alt="étoile">
+												<img src="./img/star.png" alt="étoile">
+											</span>
+										</div>
+									</div>
+								</div>
+								<p class="commentary__content">Très bonne appli, je recommande !</p>
+							</div>
+
+					</div>
 				</div>
 
 				<div class="swiper-button-next"></div>
@@ -106,21 +248,26 @@
 		<div class="footer__header">
 			<p class="footerHeader__title">france.hub</p>
 			<div class="selector">
-				<span>Langue : </span>
-				<select></select>
+				<span>Langue : Français</span>
 			</div>
 		</div>
 
 		<div class="footer__footer">
 			<p class="footerFooter__title">Suivez-nous</p>
-			<div class="footerFooter__logos">
-				<img src="">
+			<div class="footerLogos">
+				<img class="footerLogos__item" src="./img/instagram.png" alt="instagram">
+				<img class="footerLogos__item" src="./img/linkedin.png" alt="linkedin">
+				<img class="footerLogos__item" src="./img/facebook.png" alt="facebook">
+				<img class="footerLogos__item" src="./img/twitter.png" alt="twitter">
 			</div>
 		</div>
 	</footer>
 	 
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.5.0/js/swiper.js"></script>
+	
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.5.0/js/swiper.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.5.0/js/swiper.min.js"></script>
 	<script src="./script/swiper.js"></script>
 </body>
+
 </html>

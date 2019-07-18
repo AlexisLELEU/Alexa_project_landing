@@ -1,7 +1,7 @@
 .footer {
 	background: $darkGrey;
 	color: $white;
-	padding: 40px 10px;
+	padding: 40px 20px;
 	font-size: 24px;
 
 	&__header {
@@ -13,20 +13,24 @@
 	}
 
 	&__footer {
+		width: 60%;
+		margin: 0 auto;
 		
 		.footerFooter {
-
 			&__title {
 				text-align:center;
 			}
-
-			&__logos {
-		
-			}
-
 		}
 
+		.footerLogos {
+			padding: 30px 0 0 0;
+			display: flex;
+			justify-content: space-between;
+		}
+
+		@include tablet {
+    	margin: inherit;
+    	width: 10em;
+		}
 	}
-
-
 }

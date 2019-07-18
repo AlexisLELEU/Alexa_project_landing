@@ -1,7 +1,19 @@
 .email {
-		margin: 30px 10px;
+		margin: 30px 20px;
 		display: flex;
 		flex-direction: column;
+
+		@include desktop {
+		flex-direction: row;
+			&__part1 {
+				width: 60%;
+				padding: 3em;
+			}
+
+			&__part2 {
+				width: 40%;
+			}
+		}
 
 		&Part1__title {
 			font-size: 32px;
