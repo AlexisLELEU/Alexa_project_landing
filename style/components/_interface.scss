@@ -1,0 +1,84 @@
+.interface {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.253415) 18.46%, rgba(44, 105, 246, 0.2) 100%);
+    padding: 20px 20px 0 20px;
+
+    @include desktop {
+        padding: 100px 0 0;
+    }
+
+    &__txt {
+        max-width: 600px;
+        margin: 60px auto;
+        font-family: Brown;
+        font-size: 32px;
+        line-height: 31px;
+        color: $black;
+        text-align: center;
+
+        @include desktop {
+            margin: 120px auto 70px auto;
+        }
+
+        span {
+            color: $blue;
+        }
+    }
+
+    &__ctn {
+        max-width: 1150px;
+        margin: 0 auto;
+
+        &>div {
+            @include tablet {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+
+                &.reverse {
+                    flex-direction: row-reverse;
+                }
+
+                &:first-of-type {
+                    transform: translateY(10px);
+                }
+            }
+        }
+
+        &__txt {
+            @include tablet {
+                width: 45%;
+            }
+
+            font-size: 24px;
+            line-height: 23px;
+
+            p {
+                @include tablet {
+                    width: 50%;
+                    margin: 0 auto;
+                    text-align: left;
+                }
+
+                span {
+                    display: block;
+                    font-size: 20px;
+                    line-height: 19px;
+                    color: $blue;
+                }
+            }
+        }
+
+        &__img {
+            padding: 20px 0;
+
+            @include tablet {
+                width: 55%;
+                padding: 0;
+            }
+
+            img {
+                width: 100%;
+            }
+        }
+    }
+}

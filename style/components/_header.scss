@@ -1,3 +1,48 @@
 .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 81px;
     background: $black;
+    padding: 0 20px;
+
+    @include tablet {
+        padding: 0 38px;
+    }
+
+    &>div,
+    &__nav ul {
+        display: flex;
+        align-items: center;
+        color: $white;
+    }
+
+    &__logo {
+        padding-right: 21px;
+    }
+
+    &__nav {
+        display: none;
+        padding-left: 21px;
+        border-left: 1px solid $white;
+
+        @include tablet {
+            display: flex;
+        }
+
+        &__item {
+            margin-left: 32px;
+
+            &:first-of-type {
+                margin-left: 0;
+            }
+        }
+    }
+
+    &__cta {
+        color: $white;
+        background: $blue;
+        padding: 15px;
+        border-radius: 4    px;
+    }
 }
