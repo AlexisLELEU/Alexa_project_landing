@@ -1,7 +1,5 @@
 .info{
-    font-family: 'Brown';
-    padding: 30px;
-    width: 100vw;
+    padding-top: 50px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -43,7 +41,6 @@
         }
     }
     @include tablet {
-        padding: 50px;
         .info_header{
             h2{
                 width: 500px;
