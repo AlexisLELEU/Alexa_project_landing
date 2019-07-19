@@ -27,11 +27,10 @@ html,body {
 	.swiper-container {
 
 		width: 100%;
-		height: 300px !important;
 		padding: 0 20px;
 
 		.swiper-button-next, .swiper-button-prev {
-    	top: 40%;
+    	top: 50%;
     }
 
 		&-first {
@@ -147,12 +146,19 @@ html,body {
 			display : flex;
 			align-items: center;
 			&__image {
-				width: 5em;
+				width: 3em;
+				@include tablet {
+					width: 5em;
+				}
 			}
 
 			&__infos {
 				height: 100%;
-				margin: 0.5em 2em;
+				margin: 0.5em;
+				@include tablet {
+					margin: 0.5em 2em;
+				}
+				
 
 				.commentaryInfo {
 
