@@ -1,0 +1,85 @@
+.intro {
+    max-width: 1200px;
+    margin: 60px auto 0 auto;
+    padding: 0 20px;
+
+    @include tablet {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    @include desktop {
+        padding: 0 10px;
+    }
+
+    &__ctn,
+    &__img {
+        width: 100%;
+
+        @include tablet {
+            width: 50%;
+        }
+
+        img {
+            max-width: 100%;
+        }
+    }
+
+    &__ctn {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+
+        span {
+            font-size: 14px;
+            line-height: 13px;
+        }
+    }
+
+    &__img {
+        margin-top: 20px;
+
+        @include tablet {
+            width: 50%;
+            margin-top: 0px;
+            text-align: center;
+        }
+    }
+
+    &__ttl {
+        font-size: 30px;
+        line-height: 35px;
+
+        @include tablet {
+            font-size: 50px;
+            line-height: 55px;
+        }
+
+        span {
+            display: block;
+            font-size: 30px;
+            line-height: 35px;
+            color: $blue;
+
+            @include tablet {
+                font-size: 50px;
+                line-height: 55px;
+            }
+        }
+    }
+
+    &__txt {
+        margin: 30px 0 41px 0;
+        font-size: 20px;
+        line-height: 19px;
+    }
+
+    &__btn {
+        background: $blue;
+        color: $white;
+        border-radius: 4px;
+        padding: 15px 30px;
+        margin-bottom: 10px;
+    }
+}
